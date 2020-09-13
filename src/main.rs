@@ -1,27 +1,47 @@
 use reqwest;
 use scraper::{Html, Selector};
+use std::io::prelude::*;
 use itertools::Itertools;
 use http::{HeaderMap, HeaderValue};
 use url::{Url};
-use std::thread;
+//use std::thread;
+use std::io::BufReader;
+use std::fs::File;
+use std::io;
+use std::path::Path;
 
 enum LinkOptions{
     INTERNAL,
     EXTERNAL,
+    ALL,
+}
+
+fn read_lines(path: &str) -> std::io::Result<Vec<String>> {
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    Ok(
+        reader.lines().filter_map(Result::ok).collect()
+    )
 }
 
 fn main(){
     println!("Start Scrapping.......");
     let mut fetched_urls: Vec<String> = Vec::new();
 
+    // Getting Endpoints/Wordlist froma file
+    //let endpoints: Vec<String> = read_lines("endpoints.txt").unwrap();
+    //println!("{:?}",endpoints);
+
+    // Start Scarping
     get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca");
-    for i in fetched_urls.clone(){
-        println!("Scarping {}",i);
-        get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
-    }
-    for i in fetched_urls.clone(){
-        println!("url: {}",i);
-    }
+
+    //for i in fetched_urls.clone(){
+     //   println!("Scarping {}",i);
+      //  get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
+    //}
+    //for i in fetched_urls.clone(){
+     //   println!("url: {}",i);
+    //}
 
 
     //get_urls("http://b1twis3.ca/burpsuite-30-pro-tips/");
@@ -59,11 +79,12 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
 
         // Filtering Internal and External URLs
         let mut parsed_target = Url::parse(target_url)?;
-        if(parsed_target.join(i)?.path() != "/"){
+        if parsed_target.join(i)?.path() != "/" {
             let mut check_url = parsed_target.join(i)?;
 
         match option{
-                LinkOptions::INTERNAL => {
+
+               LinkOptions::INTERNAL => {
                     // Internal Links
                     if parsed_target.host_str().unwrap() == check_url.host_str().unwrap() {
                         if !check_url.path().contains("ailto"){
@@ -78,14 +99,39 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
                     }
                 }
 
-               LinkOptions::EXTERNAL => {
 
-                // External Links
-                if parsed_target.host_str().unwrap() != parsed_target.join(i)?.host_str().unwrap(){
-                    //println!("external: {}",i);
-                    fetched_urls.push(i.to_string());
-                    // Ingore (for now)
+               LinkOptions::EXTERNAL => {
+                    // External Links
+                    if parsed_target.host_str().unwrap() != parsed_target.join(i)?.host_str().unwrap(){
+                        //println!("external: {}",i);
+                        fetched_urls.push(i.to_string());
+                        // Ingore (for now)
+                        }
+               }
+
+               LinkOptions::ALL => {
+                   // External and Internal Links
+
+                   // Internal Links
+                    if parsed_target.host_str().unwrap() == check_url.host_str().unwrap() {
+                        if !check_url.path().contains("ailto"){
+                            fetched_urls.push(check_url.as_str().to_string());
+                        }
+
+                    // Relative Path
+                    if None == parsed_target.join(i)?.host_str(){
+                        let jurl = parsed_target.join(i)?;
+                        fetched_urls.push(jurl.as_str().to_string());
+                        }
                     }
+
+                  // External Links
+                  if parsed_target.host_str().unwrap() != parsed_target.join(i)?.host_str().unwrap(){
+                       //println!("external: {}",i);
+                       fetched_urls.push(i.to_string());
+                       // Ingore (for now)
+                  }
+
                }
 
             }
