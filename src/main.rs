@@ -7,8 +7,8 @@ use url::{Url};
 //use std::thread;
 use std::io::BufReader;
 use std::fs::File;
-use std::io;
-use std::path::Path;
+//use std::io;
+//use std::path::Path;
 
 
 /// Link Options Enum
@@ -27,7 +27,22 @@ fn read_lines(path: &str) -> std::io::Result<Vec<String>> {
     )
 }
 
-fn main(){
+/// Build Sitemap
+fn build_sitemap(_urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<&str>>){
+    let mut mapi: Vec<_> = _urls.iter().map(|i| {
+           //let mut sitemap_local: Vec<Vec<&str>> = Vec::new();
+           //println!("url: {:?}",Url::parse(&i).unwrap().path_segments().map(|c| c.collect::<Vec<_>>()).unwrap());
+           //println!("{:?}",_path);
+           //let mut _url = String::from(i.clone());
+           //{
+           return Url::parse(&i).unwrap().path_segments().map(|c| c.collect::<Vec<_>>()).unwrap();
+           //}
+        }).collect::<Vec<_>>();
+
+    println!("mapi: {:?}",mapi);
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Start Scrapping.......");
     let mut fetched_urls: Vec<String> = Vec::new();
 
@@ -38,16 +53,17 @@ fn main(){
     // Start Scarping
     get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca");
 
+
     //for i in fetched_urls.clone(){
      //   println!("Scarping {}",i);
       //  get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
     //}
-    //for i in fetched_urls.clone(){
-     //   println!("url: {}",i);
-    //}
 
+    let mut sitemap: Vec<Vec<&str>> = Vec::new();
 
-    //get_urls("http://b1twis3.ca/burpsuite-30-pro-tips/");
+    build_sitemap(&mut fetched_urls,&mut sitemap);
+
+    Ok(())
 }
 
 /// Fetch URLs based on `LinkOptions` and save them into `fetched_urls` vector
@@ -71,27 +87,38 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
 
     // Selector & Element
     let target_tags = vec!["a","link","script","img"];
-    //let mut urls = Vec::new();
+    let mut urls = Vec::new();
 
-    let mut urls: Vec<_> = target_tags.into_iter().map( |tag| {
+    target_tags.iter().map( |tag| {
         let selector = Selector::parse(tag).unwrap();
 
         for element in fragment.select(&selector){
             match tag {
-               "a" => {
-                    //element.value().attr("href").unwrap();
-                    println!("[a]: {}",element.value().attr("href").unwrap());
+               &"a" => {
+                    urls.push(element.value().attr("href").unwrap());
+                    //println!("[a]: {}",element.value().attr("href").unwrap());
                 }
 
-               "link" => {
-                   println!("[href]: {}",element.value().attr("href").unwrap());
+               &"link" => {
+
+                   urls.push(element.value().attr("href").unwrap());
+                   //println!("[href]: {}",element.value().attr("href").unwrap());
                }
 
-               "script" => {
-                   println!("[SRC]: {}",element.value().attr("src").unwrap());
+               &"script" => {
+                   match element.value().attr("src"){
+                       None => {
+
+                       }
+                       _ => {
+                            //println!("[SRC]: {}",element.value().attr("src").unwrap());
+                            urls.push(element.value().attr("src").unwrap());
+                       }
+                   }
                }
-               "img" => {
-                   println!("[IMG]: {}",element.value().attr("src").unwrap());
+               &"img" => {
+                   //println!("[IMG]: {}",element.value().attr("src").unwrap());
+                   urls.push(element.value().attr("src").unwrap());
                }
                _ => {
 
@@ -100,21 +127,22 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
 
         }
 
-    }).collect();
+    }).unique().collect::<()>();
 
 
     //-- End of Selector
 
     // Cleaning the URLs vector
-    let mut urls: Vec<_> = urls.into_iter().unique().collect();
-    /*
+    //let mut urls: Vec<String> = urls.iter().unique().collect::<()>();
+    //println!("urls: {:?}",urls);
+
     for i in urls{
 
 
         // Filtering Internal and External URLs
-        let mut parsed_target = Url::parse(target_url)?;
-        if parsed_target.join(i)?.path() != "/" {
-            let mut check_url = parsed_target.join(i)?;
+        let parsed_target = Url::parse(target_url)?;
+        if parsed_target.join(&i)?.path() != "/" {
+            let check_url = parsed_target.join(&i)?;
 
         match option{
 
@@ -126,8 +154,8 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
                         }
 
                     // Relative Path
-                    if None == parsed_target.join(i)?.host_str(){
-                        let jurl = parsed_target.join(i)?;
+                    if None == parsed_target.join(&i)?.host_str(){
+                        let jurl = parsed_target.join(&i)?;
                         fetched_urls.push(jurl.as_str().to_string());
                         }
                     }
@@ -136,7 +164,7 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
 
                LinkOptions::EXTERNAL => {
                     // External Links
-                    if parsed_target.host_str().unwrap() != parsed_target.join(i)?.host_str().unwrap(){
+                    if parsed_target.host_str().unwrap() != parsed_target.join(&i)?.host_str().unwrap(){
                         //println!("external: {}",i);
                         fetched_urls.push(i.to_string());
                         // Ingore (for now)
@@ -153,25 +181,27 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
                         }
 
                     // Relative Path
-                    if None == parsed_target.join(i)?.host_str(){
-                        let jurl = parsed_target.join(i)?;
+                    if None == parsed_target.join(&i)?.host_str(){
+                        let jurl = parsed_target.join(&i)?;
                         fetched_urls.push(jurl.as_str().to_string());
                         }
                     }
 
                   // External Links
-                  if parsed_target.host_str().unwrap() != parsed_target.join(i)?.host_str().unwrap(){
+                  if parsed_target.host_str().unwrap() != parsed_target.join(&i)?.host_str().unwrap(){
                        //println!("external: {}",i);
                        fetched_urls.push(i.to_string());
                        // Ingore (for now)
                   }
 
-               }
+              }
 
             }
         }
     }
-*/
+
+
+
 
     Ok(())
 
