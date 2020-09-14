@@ -18,6 +18,12 @@ enum LinkOptions{
     ALL,
 }
 
+/// Fetched Url Struct
+//#[derive(Debug, Copy, Clone)]
+//struct FUrl{
+ //url: Vec<String>, 
+//}
+
 /// Reading lines from a file
 fn read_lines(path: &str) -> std::io::Result<Vec<String>> {
     let file = File::open(path)?;
@@ -27,19 +33,15 @@ fn read_lines(path: &str) -> std::io::Result<Vec<String>> {
     )
 }
 
-/// Build Sitemap
-fn build_sitemap(_urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<&str>>){
-    let mut mapi: Vec<_> = _urls.iter().map(|i| {
-           //let mut sitemap_local: Vec<Vec<&str>> = Vec::new();
-           //println!("url: {:?}",Url::parse(&i).unwrap().path_segments().map(|c| c.collect::<Vec<_>>()).unwrap());
-           //println!("{:?}",_path);
-           //let mut _url = String::from(i.clone());
-           //{
-           return Url::parse(&i).unwrap().path_segments().map(|c| c.collect::<Vec<_>>()).unwrap();
-           //}
-        }).collect::<Vec<_>>();
-
-    println!("mapi: {:?}",mapi);
+/// Build site map
+fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<String>>){
+        let mut counter: usize = 0;
+        for url in _urls{
+            let mut item = url.split("/").collect::<Vec<&str>>();
+            if _index <= item.len() -1 {
+            _sitemap.push(vec!(item[_index].to_string()));
+            }
+       }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -59,9 +61,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       //  get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
     //}
 
-    let mut sitemap: Vec<Vec<&str>> = Vec::new();
-
-    build_sitemap(&mut fetched_urls,&mut sitemap);
+    let mut sitemap: Vec<Vec<String>> = Vec::new();
+    build_sitemap(3, &mut fetched_urls,&mut sitemap);
+    for i in sitemap.clone(){
+        if i[0] != ""{
+        println!("Path: {}",i[0]);
+        }
+    }
+    println!("{:?}",sitemap);
+   
 
     Ok(())
 }
