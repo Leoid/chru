@@ -21,7 +21,7 @@ enum LinkOptions{
 /// Fetched Url Struct
 //#[derive(Debug, Copy, Clone)]
 //struct FUrl{
- //url: Vec<String>, 
+ //url: Vec<String>,
 //}
 
 /// Reading lines from a file
@@ -35,9 +35,8 @@ fn read_lines(path: &str) -> std::io::Result<Vec<String>> {
 
 /// Build site map
 fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<String>>){
-        let mut counter: usize = 0;
         for url in _urls{
-            let mut item = url.split("/").collect::<Vec<&str>>();
+            let item = url.split("/").collect::<Vec<&str>>();
             if _index <= item.len() -1 {
             _sitemap.push(vec!(item[_index].to_string()));
             }
@@ -54,6 +53,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Start Scarping
     get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca");
+    println!("fetched: {:?}",fetched_urls);
 
 
     //for i in fetched_urls.clone(){
@@ -61,15 +61,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       //  get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
     //}
 
+    // Clean Duplicates in Site map and fetch route levels
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    build_sitemap(3, &mut fetched_urls,&mut sitemap);
-    for i in sitemap.clone(){
+    // Fetch the first route level `3`
+    build_sitemap(4, &mut fetched_urls,&mut sitemap);
+    let clean_sitemap: Vec<Vec<String>> = sitemap.clone().into_iter().unique().collect();
+    for i in clean_sitemap {
         if i[0] != ""{
         println!("Path: {}",i[0]);
         }
     }
     println!("{:?}",sitemap);
-   
+
 
     Ok(())
 }
