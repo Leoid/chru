@@ -1,2 +1,2 @@
-endpoint1
-endpoint2
+endpoint1.php
+endpoint2.php

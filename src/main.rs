@@ -35,43 +35,74 @@ fn read_lines(path: &str) -> std::io::Result<Vec<String>> {
 
 /// Build site map
 fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<String>>){
+    let mut v: Vec<String> = Vec::new();
         for url in _urls{
             let item = url.split("/").collect::<Vec<&str>>();
             if _index <= item.len() -1 {
-            _sitemap.push(vec!(item[_index].to_string()));
+                if _index == 3{
+                    _sitemap.push(vec!(item[_index].to_string()));
+                }
+                if _index > 3 {
+                    for i in 3.._index+1{
+                        v.push(item[i].to_string());
+                    }
+                    println!("v: {:?}",v.clone());
+                    _sitemap.push((v.clone()));    
+                    v.clear();
+                }
             }
        }
 }
 
+/// Add endpoints to the site map
+fn add_endpoints(_index: usize, _urls: &mut Vec<String>,_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>){
+    
+        //println!("{:?}",endpoints);
+  
+    // Clean Duplicates in Site map and fetch route levels
+    let mut sitemap: Vec<Vec<String>> = Vec::new();
+    // Fetch the routes form `3` to `_index`  
+    build_sitemap(_index, _urls,_sitemap);
+    let clean_sitemap: Vec<Vec<String>> = _sitemap.clone().into_iter().unique().collect();
+    //println!("clean_sitemap: {:?}",clean_sitemap.clone());
+
+    for i in clean_sitemap{
+        println!("sitemap: {}",i[1]);
+    }
+    //
+
+    //for i in clean_sitemap {
+     //   for endpoint in &_endpoints {
+      //      if i[0] != ""{
+       //     println!("Path: {}/{}",i[0],endpoint);
+        //    }
+        //}
+
+    //}
+}
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Start Scrapping.......");
     let mut fetched_urls: Vec<String> = Vec::new();
-
-    // Getting Endpoints/Wordlist froma file
-    //let endpoints: Vec<String> = read_lines("endpoints.txt").unwrap();
-    //println!("{:?}",endpoints);
-
+    let mut sitemap: Vec<Vec<String>> = Vec::new();
+   
     // Start Scarping
     get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca");
-    println!("fetched: {:?}",fetched_urls);
+    //println!("fetched: {:?}",fetched_urls);
+    
+    // Getting Endpoints/Wordlist froma file
+    let endpoints: Vec<String> = read_lines("test.txt").unwrap();
 
 
     //for i in fetched_urls.clone(){
      //   println!("Scarping {}",i);
       //  get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
     //}
-
-    // Clean Duplicates in Site map and fetch route levels
-    let mut sitemap: Vec<Vec<String>> = Vec::new();
-    // Fetch the first route level `3`
-    build_sitemap(4, &mut fetched_urls,&mut sitemap);
-    let clean_sitemap: Vec<Vec<String>> = sitemap.clone().into_iter().unique().collect();
-    for i in clean_sitemap {
-        if i[0] != ""{
-        println!("Path: {}",i[0]);
-        }
+    for i in 3..5{
+        println!(":::::::::: Depth: {} ::::::::::::::",i-3);
+        add_endpoints(i,&mut fetched_urls, &mut sitemap, endpoints.clone());
+        sitemap.clear();
     }
-    println!("{:?}",sitemap);
+    //println!("{:?}",sitemap);
 
 
     Ok(())
