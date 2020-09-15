@@ -39,17 +39,23 @@ fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<
         for url in _urls{
             let item = url.split("/").collect::<Vec<&str>>();
             if _index <= item.len() -1 {
+                if item[_index] != ""{ 
                 if _index == 3{
                     _sitemap.push(vec!(item[_index].to_string()));
                 }
                 if _index > 3 {
                     for i in 3.._index+1{
+                        if item[i].to_string().contains("."){
+                            continue;
+                        }
                         v.push(item[i].to_string());
                     }
-                    println!("v: {:?}",v.clone());
-                    _sitemap.push((v.clone()));    
+                    //println!("v: {:?}",v.clone());
+                    _sitemap.push(v.clone());    
                     v.clear();
                 }
+                }
+
             }
        }
 }
@@ -65,9 +71,16 @@ fn add_endpoints(_index: usize, _urls: &mut Vec<String>,_sitemap: &mut Vec<Vec<S
     build_sitemap(_index, _urls,_sitemap);
     let clean_sitemap: Vec<Vec<String>> = _sitemap.clone().into_iter().unique().collect();
     //println!("clean_sitemap: {:?}",clean_sitemap.clone());
-
+     
     for i in clean_sitemap{
-        println!("sitemap: {}",i[1]);
+        for endpoint in &_endpoints {
+            for ii in &i {
+                if ii != ""{
+                  print!("{}/",ii);
+                }
+            }
+            print!("{}\n",endpoint);            
+        }
     }
     //
 
@@ -97,7 +110,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
      //   println!("Scarping {}",i);
       //  get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
     //}
-    for i in 3..5{
+    for i in 3..10{
         println!(":::::::::: Depth: {} ::::::::::::::",i-3);
         add_endpoints(i,&mut fetched_urls, &mut sitemap, endpoints.clone());
         sitemap.clear();
