@@ -39,12 +39,17 @@ fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<
         for url in _urls{
             let item = url.split("/").collect::<Vec<&str>>();
             if _index <= item.len() -1 {
+                // Skipping the empty or the "/" at the end of each vector
                 if item[_index] != ""{ 
                 if _index == 3{
+                        if item[_index].to_string().contains("."){
+                            continue;
+                        }
                     _sitemap.push(vec!(item[_index].to_string()));
                 }
                 if _index > 3 {
                     for i in 3.._index+1{
+                        // Skipping the filename 
                         if item[i].to_string().contains("."){
                             continue;
                         }
@@ -104,17 +109,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // Getting Endpoints/Wordlist froma file
     let endpoints: Vec<String> = read_lines("test.txt").unwrap();
-
-
+    
+    
+    //println!("{:?}",fetched_urls);
     //for i in fetched_urls.clone(){
-     //   println!("Scarping {}",i);
-      //  get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
+       // println!("Scarping {}",i);
+        //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
     //}
+
+    // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
+    // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
+    // later on
+    
     for i in 3..10{
         println!(":::::::::: Depth: {} ::::::::::::::",i-3);
         add_endpoints(i,&mut fetched_urls, &mut sitemap, endpoints.clone());
         sitemap.clear();
     }
+    
+    //get_urls(LinkOptions::INTERNAL, &mut fetched_urls.clone(), &fetched_urls[0]);
+    println!("fetched_url[0] = {}",&fetched_urls[1]);
     //println!("{:?}",sitemap);
 
 
