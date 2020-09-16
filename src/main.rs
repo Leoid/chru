@@ -78,6 +78,7 @@ fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>){
     //let mut _sitemap: Vec<Vec<String>> = Vec::new();
     // Fetch the routes form `3` to `_index`
     //build_segmented_sitemap(_index, _urls,_sitemap);
+    println!(":::::::::::::: Adding Endpoints ::::::::::::::::");
 
     // Get the cleaned site map and append the endpoints from `endpoints`
     let clean_sitemap: Vec<Vec<String>> = _sitemap.clone().into_iter().unique().collect();
@@ -94,43 +95,61 @@ fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>){
 
 
 
-
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
+
     println!("Start Scrapping.......");
+
+    // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
+    let target = "http://b1twis3.ca";
+    let depth = 10;
+
 
     // Start Scarping
-    get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca");
+    get_urls(LinkOptions::INTERNAL, &mut fetched_urls,target);
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
-    //println!("fetched: {:?}",fetched_urls);
+   // println!("fetched: {:?}",fetched_urls);
 
     // Getting Endpoints/Wordlist froma file
     let endpoints: Vec<String> = read_lines("test.txt").unwrap();
 
+    // Do segmentation
+    build_segmented_sitemap(depth,&mut fetched_urls,&mut sitemap);
 
-    //add_endpoints(10,&mut fetched_urls, &mut sitemap, endpoints.clone());
-    build_segmented_sitemap(10,&mut fetched_urls,&mut sitemap);
-    //for i in fetched_urls.clone(){
-     //   println!("Scarping {}",i);
-      //  if &i == ""{
-       // get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
-        //println!("{:?}",fetched_urls);
-        //}
-    //}
 
-    // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
-    // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
-    // later on
-    for i in ROOT..10{
-        //println!(":::::::::: Depth: {} ::::::::::::::",i-ROOT);
-       // add_endpoints(i,&mut fetched_urls, &mut sitemap, endpoints.clone());
+    let mut test_url = fetched_urls.clone();
+    let url1 = &test_url[0..3];
+
+    for i in ROOT..depth{
+        // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
+        // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
+        // later on
         build_segmented_sitemap(i,&mut fetched_urls,&mut sitemap);
-        //sitemap.clear();
+   }
+
+    add_endpoints(&mut sitemap, endpoints.clone());
+
+    // Dogin Segmentation and adding endpoints to the inner URLs
+    for i in url1{
+        if i != ""{
+        println!("::::::::::::::Inner Scraping {} ::::::::::::",i);
+        get_urls(LinkOptions::INTERNAL, &mut fetched_urls,i);
+        for i in ROOT..depth{
+            // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
+            // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
+            // later on
+
+            build_segmented_sitemap(i,&mut fetched_urls,&mut sitemap);
+        }
+
+        add_endpoints( &mut sitemap, endpoints.clone());
+        //println!("{:?}",fetched_urls);
+        }
     }
 
-    add_endpoints( &mut sitemap, endpoints.clone());
+
     //println!("sitemap: {:?}", _sitemap);
 
 
