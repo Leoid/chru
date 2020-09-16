@@ -40,7 +40,7 @@ fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<
             let item = url.split("/").collect::<Vec<&str>>();
             if _index <= item.len() -1 {
                 // Skipping the empty or the "/" at the end of each vector
-                if item[_index] != ""{ 
+                if item[_index] != ""{
                 if _index == 3{
                         if item[_index].to_string().contains("."){
                             continue;
@@ -49,14 +49,15 @@ fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<
                 }
                 if _index > 3 {
                     for i in 3.._index+1{
-                        // Skipping the filename 
+                        // Skipping the filename
                         if item[i].to_string().contains("."){
                             continue;
                         }
                         v.push(item[i].to_string());
                     }
                     //println!("v: {:?}",v.clone());
-                    _sitemap.push(v.clone());    
+                    //let item: Vec<_> = v.clone().into_iter().unique().collect();
+                    _sitemap.push(v.clone());
                     v.clear();
                 }
                 }
@@ -67,16 +68,15 @@ fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<
 
 /// Add endpoints to the site map
 fn add_endpoints(_index: usize, _urls: &mut Vec<String>,_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>){
-    
+
         //println!("{:?}",endpoints);
-  
+
     // Clean Duplicates in Site map and fetch route levels
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    // Fetch the routes form `3` to `_index`  
+    // Fetch the routes form `3` to `_index`
     build_sitemap(_index, _urls,_sitemap);
     let clean_sitemap: Vec<Vec<String>> = _sitemap.clone().into_iter().unique().collect();
-    //println!("clean_sitemap: {:?}",clean_sitemap.clone());
-     
+
     for i in clean_sitemap{
         for endpoint in &_endpoints {
             for ii in &i {
@@ -84,7 +84,7 @@ fn add_endpoints(_index: usize, _urls: &mut Vec<String>,_sitemap: &mut Vec<Vec<S
                   print!("{}/",ii);
                 }
             }
-            print!("{}\n",endpoint);            
+            print!("{}\n",endpoint);
         }
     }
     //
@@ -102,33 +102,36 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Start Scrapping.......");
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-   
+
     // Start Scarping
     get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca");
+    //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
     //println!("fetched: {:?}",fetched_urls);
-    
+
     // Getting Endpoints/Wordlist froma file
     let endpoints: Vec<String> = read_lines("test.txt").unwrap();
-    
-    
-    //println!("{:?}",fetched_urls);
+
+
     //for i in fetched_urls.clone(){
-       // println!("Scarping {}",i);
-        //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
+     //   println!("Scarping {}",i);
+      //  if &i == ""{
+       // get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
+        //}
     //}
+    //println!("{:?}",fetched_urls);
 
     // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
     // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
     // later on
-    
-    for i in 3..10{
+
+    for i in 3..6{
         println!(":::::::::: Depth: {} ::::::::::::::",i-3);
         add_endpoints(i,&mut fetched_urls, &mut sitemap, endpoints.clone());
         sitemap.clear();
     }
-    
+
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls.clone(), &fetched_urls[0]);
-    println!("fetched_url[0] = {}",&fetched_urls[1]);
+    //println!("fetched_url[0] = {}",&fetched_urls[5]);
     //println!("{:?}",sitemap);
 
 
@@ -153,14 +156,15 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
 
     let body = resp;
     let fragment = Html::parse_document(&body);
-
+    //println!("{:?}",&fragment.errors);
     // Selector & Element
     let target_tags = vec!["a","link","script","img"];
     let mut urls = Vec::new();
-
+   // if fragment.clone().errors.len()  > 0 as usize {
+    //    assert!(true);
+    //}
     target_tags.iter().map( |tag| {
         let selector = Selector::parse(tag).unwrap();
-
         for element in fragment.select(&selector){
             match tag {
                &"a" => {
@@ -204,9 +208,7 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
     // Cleaning the URLs vector
     //let mut urls: Vec<String> = urls.iter().unique().collect::<()>();
     //println!("urls: {:?}",urls);
-
     for i in urls{
-
 
         // Filtering Internal and External URLs
         let parsed_target = Url::parse(target_url)?;
