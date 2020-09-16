@@ -18,6 +18,10 @@ enum LinkOptions{
     ALL,
 }
 
+
+/// Root route
+const ROOT: usize = 3;
+
 /// Fetched Url Struct
 //#[derive(Debug, Copy, Clone)]
 //struct FUrl{
@@ -41,14 +45,14 @@ fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<
             if _index <= item.len() -1 {
                 // Skipping the empty or the "/" at the end of each vector
                 if item[_index] != ""{
-                if _index == 3{
+                if _index == ROOT{
                         if item[_index].to_string().contains("."){
                             continue;
                         }
                     _sitemap.push(vec!(item[_index].to_string()));
                 }
-                if _index > 3 {
-                    for i in 3.._index+1{
+                if _index > ROOT {
+                    for i in ROOT.._index+1{
                         // Skipping the filename
                         if item[i].to_string().contains("."){
                             continue;
@@ -67,7 +71,7 @@ fn build_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mut Vec<Vec<
 }
 
 /// Add endpoints to the site map
-fn add_endpoints(_index: usize, _urls: &mut Vec<String>,_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>){
+fn add_endpoints(_index: usize,_urls: &mut Vec<String>,_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>){
 
         //println!("{:?}",endpoints);
 
@@ -75,28 +79,6 @@ fn add_endpoints(_index: usize, _urls: &mut Vec<String>,_sitemap: &mut Vec<Vec<S
     let mut sitemap: Vec<Vec<String>> = Vec::new();
     // Fetch the routes form `3` to `_index`
     build_sitemap(_index, _urls,_sitemap);
-    let clean_sitemap: Vec<Vec<String>> = _sitemap.clone().into_iter().unique().collect();
-
-    for i in clean_sitemap{
-        for endpoint in &_endpoints {
-            for ii in &i {
-                if ii != ""{
-                  print!("{}/",ii);
-                }
-            }
-            print!("{}\n",endpoint);
-        }
-    }
-    //
-
-    //for i in clean_sitemap {
-     //   for endpoint in &_endpoints {
-      //      if i[0] != ""{
-       //     println!("Path: {}/{}",i[0],endpoint);
-        //    }
-        //}
-
-    //}
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Start Scrapping.......");
@@ -116,19 +98,34 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
      //   println!("Scarping {}",i);
       //  if &i == ""{
        // get_urls(LinkOptions::INTERNAL, &mut fetched_urls,&i);
+        //println!("{:?}",fetched_urls);
         //}
     //}
-    //println!("{:?}",fetched_urls);
+
 
     // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
     // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
     // later on
-
-    for i in 3..6{
-        println!(":::::::::: Depth: {} ::::::::::::::",i-3);
+    for i in ROOT..10{
+        println!(":::::::::: Depth: {} ::::::::::::::",i-ROOT);
         add_endpoints(i,&mut fetched_urls, &mut sitemap, endpoints.clone());
-        sitemap.clear();
+        //sitemap.clear();
     }
+
+    // Get the cleaned site map and append the endpoints from `endpoints`
+    let clean_sitemap: Vec<Vec<String>> = sitemap.clone().into_iter().unique().collect();
+    for i in clean_sitemap{
+        for endpoint in &endpoints {
+            for ii in &i {
+                if ii != ""{
+                  print!("{}/",ii);
+                }
+            }
+            print!("{}\n",endpoint);
+        }
+    }
+
+    //println!("sitemap: {:?}",&sitemap);
 
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls.clone(), &fetched_urls[0]);
     //println!("fetched_url[0] = {}",&fetched_urls[5]);
