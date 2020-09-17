@@ -71,29 +71,35 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
 }
 
 /// Add endpoints to the site map
-fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>){
+fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Vec<Vec<String>> {
+//fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>)  {
 
 
     // Clean Duplicates in Site map and fetch route levels
     //let mut _sitemap: Vec<Vec<String>> = Vec::new();
     // Fetch the routes form `3` to `_index`
     //build_segmented_sitemap(_index, _urls,_sitemap);
-    println!(":::::::::::::: Adding Endpoints ::::::::::::::::");
 
     // Get the cleaned site map and append the endpoints from `endpoints`
     let clean_sitemap: Vec<Vec<String>> = _sitemap.clone().into_iter().unique().collect();
+    let mut endpoints_vec2: Vec<Vec<String>> = Vec::new();
+    //println!("sitemap: {:?}",clean_sitemap);
     for i in clean_sitemap{
         for endpoint in &_endpoints {
+
+            let mut endpoints_vec: Vec<String> = Vec::new();
             for ii in &i {
                 if ii != ""{
-                  print!("{}/",ii);
+                  //print!("{}/",ii);
+                  endpoints_vec.push(format!("{}/",ii));
                 }
             }
-            print!("{}\n",endpoint);
+            endpoints_vec.push(format!("{}",endpoint).to_string());
+            //print!("{}\n",endpoint);
+            endpoints_vec2.push(endpoints_vec);
         }
     }
-
-
+    endpoints_vec2
 
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -129,12 +135,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         build_segmented_sitemap(i,&mut fetched_urls,&mut sitemap);
    }
 
-    add_endpoints(&mut sitemap, endpoints.clone());
+    let mut new_sitemap: Vec<Vec<String>> = add_endpoints(&mut sitemap, endpoints.clone());
 
     // Dogin Segmentation and adding endpoints to the inner URLs
     for i in url1{
         if i != ""{
-        println!("::::::::::::::Inner Scraping {} ::::::::::::",i);
         get_urls(LinkOptions::INTERNAL, &mut fetched_urls,i);
         for i in ROOT..depth{
             // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
@@ -144,9 +149,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             build_segmented_sitemap(i,&mut fetched_urls,&mut sitemap);
         }
 
-        add_endpoints( &mut sitemap, endpoints.clone());
+        new_sitemap.append(&mut add_endpoints( &mut sitemap, endpoints.clone()));
         //println!("{:?}",fetched_urls);
         }
+    }
+    //println!("New endpoints:::::: {:?}",new_endpoints);
+    println!("New Sitemap Len: {}",new_sitemap.len());
+    let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
+    println!("Unique Sitemap Len: {}",unique_sitemap.len());
+    for nn in unique_sitemap{
+        for ii in nn{
+            print!("{}",ii);
+        }
+        println!("");
     }
 
 
