@@ -9,6 +9,7 @@ use std::io::BufReader;
 use std::fs::File;
 //use std::io;
 //use std::path::Path;
+use regex::Regex;
 
 
 /// Link Options Enum
@@ -46,7 +47,8 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
                 // Skipping the empty or the "/" at the end of each vector
                 if item[_index] != ""{
                 if _index == ROOT{
-                        if item[_index].to_string().contains("."){
+                        if item[_index].to_string().contains(".") || item[_index].to_string().contains("#"){
+                            // Skip a file
                             continue;
                         }
                     _sitemap.push(vec!(item[_index].to_string()));
@@ -54,7 +56,8 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
                 if _index > ROOT {
                     for i in ROOT.._index+1{
                         // Skipping the filename
-                        if item[i].to_string().contains("."){
+                        if item[i].to_string().contains(".") || item[i].to_string().contains("#"){
+                            // Skip a file
                             continue;
                         }
                         v.push(item[i].to_string());
@@ -73,11 +76,6 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
 /// Add endpoints to the site map
 fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Vec<Vec<String>> {
 
-
-    // Clean Duplicates in Site map and fetch route levels
-    //let mut _sitemap: Vec<Vec<String>> = Vec::new();
-    // Fetch the routes form `3` to `_index`
-    //build_segmented_sitemap(_index, _urls,_sitemap);
 
     // Get the cleaned site map and append the endpoints from `endpoints`
     let clean_sitemap: Vec<Vec<String>> = _sitemap.clone().into_iter().unique().collect();
@@ -109,7 +107,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
     let target = "https://pwm.oddo-bhf.com";
-    //let target = "https://b1twis3.ca";
+    //let target = "http://b1twis3.ca";
     let depth = 10;
 
 
@@ -139,8 +137,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut new_sitemap: Vec<Vec<String>> = add_endpoints(&mut sitemap, endpoints.clone());
 
     // Dogin Segmentation and adding endpoints to the inner URLs
-    for i in url1{
+    for i in url1 {
         if i != ""{
+            
+            // Fetching JS files
+            let js_path = Url::parse(i)?;
+            if js_path.path().contains(".js"){
+                println!("path = {}{}",target,js_path.path());
+            }
+            
         get_urls(LinkOptions::INTERNAL, &mut fetched_urls,i);
         for i in ROOT..depth{
             // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
@@ -149,11 +154,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
             build_segmented_sitemap(i,&mut fetched_urls,&mut sitemap);
         }
-
         new_sitemap.append(&mut add_endpoints( &mut sitemap, endpoints.clone()));
-        //println!("{:?}",fetched_urls);
         }
     }
+    
     //println!("New endpoints:::::: {:?}",new_endpoints);
     println!("New Sitemap Len: {}",new_sitemap.len());
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
@@ -185,6 +189,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str) -> Result<(), Box<dyn std::error::Error>> {
     // Start Scraping
     let target_url = _url;
+    //println!("target____url: {}",target_url);
     let mut headers = HeaderMap::new();
     let client = reqwest::Client::builder().build()?;
     headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
