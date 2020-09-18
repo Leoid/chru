@@ -10,6 +10,9 @@ use std::fs::File;
 //use std::io;
 //use std::path::Path;
 use regex::Regex;
+use std::collections::HashSet;
+
+
 
 
 /// Link Options Enum
@@ -99,6 +102,13 @@ fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Ve
     endpoints_vec2
 
 }
+/// Extract URLs from JS file
+fn extract_urls(input: &str) -> HashSet<&str> {
+    let re: Regex = Regex::new(r"^(?!www\.|(?:http|ftp)s?:\/\/|[A-Za-z]:\\|\/\/).*").unwrap();
+   
+    re.find_iter(input).map(|u| u.as_str()).collect()
+    
+}
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Start Scrapping.......");
@@ -109,6 +119,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let target = "https://pwm.oddo-bhf.com";
     //let target = "http://b1twis3.ca";
     let depth = 10;
+    let tweet = "https://google.com hello /test/test.php /api/v1/";
+    let tag = extract_urls(tweet);
+    println!("tags = {:?}",tag);
 
 
     // Start Scarping

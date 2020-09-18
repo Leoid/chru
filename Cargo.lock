@@ -412,6 +412,7 @@ version = "0.1.0"
 dependencies = [
  "http",
  "itertools",
+ "lazy_static",
  "openssl",
  "regex",
  "reqwest",

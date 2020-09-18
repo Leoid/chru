@@ -16,3 +16,4 @@ http = "*"
 url = "*"
 openssl = { version = "0.10", features = ["vendored"] }
 regex = "*"
+lazy_static = "*"
