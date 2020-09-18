@@ -3,7 +3,7 @@ use scraper::{Html, Selector};
 use std::io::prelude::*;
 use itertools::Itertools;
 use http::{HeaderMap, HeaderValue};
-use url::{Url};
+use url::{Url, ParseError};
 //use std::thread;
 use std::io::BufReader;
 use std::fs::File;
@@ -72,7 +72,6 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
 
 /// Add endpoints to the site map
 fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Vec<Vec<String>> {
-//fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>)  {
 
 
     // Clean Duplicates in Site map and fetch route levels
@@ -109,14 +108,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    let target = "http://b1twis3.ca";
+    let target = "https://pwm.oddo-bhf.com";
+    //let target = "https://b1twis3.ca";
     let depth = 10;
 
 
     // Start Scarping
     get_urls(LinkOptions::INTERNAL, &mut fetched_urls,target);
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
-   // println!("fetched: {:?}",fetched_urls);
+    //println!("fetched: {:?}",fetched_urls);
 
     // Getting Endpoints/Wordlist froma file
     let endpoints: Vec<String> = read_lines("test.txt").unwrap();
@@ -126,7 +126,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     let mut test_url = fetched_urls.clone();
-    let url1 = &test_url[0..3];
+    //println!("test_url: {:?}",test_url);
+    let url1 = &test_url[..];
 
     for i in ROOT..depth{
         // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
@@ -165,6 +166,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
 
+
     //println!("sitemap: {:?}", _sitemap);
 
 
@@ -197,24 +199,25 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
     let body = resp;
     let fragment = Html::parse_document(&body);
     //println!("{:?}",&fragment.errors);
+    //println!("{:?}",body);
     // Selector & Element
     let target_tags = vec!["a","link","script","img"];
-    let mut urls = Vec::new();
-   // if fragment.clone().errors.len()  > 0 as usize {
-    //    assert!(true);
+    let mut urls: Vec<String> = Vec::new();
+    if fragment.clone().errors.len()  ==  0 as usize {
+     //   assert!(true);
     //}
     target_tags.iter().map( |tag| {
         let selector = Selector::parse(tag).unwrap();
         for element in fragment.select(&selector){
             match tag {
                &"a" => {
-                    urls.push(element.value().attr("href").unwrap());
+                    urls.push(element.value().attr("href").unwrap().to_string());
                     //println!("[a]: {}",element.value().attr("href").unwrap());
                 }
 
                &"link" => {
 
-                   urls.push(element.value().attr("href").unwrap());
+                   urls.push(element.value().attr("href").unwrap().to_string());
                    //println!("[href]: {}",element.value().attr("href").unwrap());
                }
 
@@ -225,13 +228,13 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
                        }
                        _ => {
                             //println!("[SRC]: {}",element.value().attr("src").unwrap());
-                            urls.push(element.value().attr("src").unwrap());
+                            urls.push(element.value().attr("src").unwrap().to_string());
                        }
                    }
                }
                &"img" => {
                    //println!("[IMG]: {}",element.value().attr("src").unwrap());
-                   urls.push(element.value().attr("src").unwrap());
+                   urls.push(element.value().attr("src").unwrap().to_string());
                }
                _ => {
 
@@ -246,15 +249,18 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
     //-- End of Selector
 
     // Cleaning the URLs vector
-    //let mut urls: Vec<String> = urls.iter().unique().collect::<()>();
+    //println!("lennn: {}",urls.len());
+    let _urls: Vec<String> = urls.clone().into_iter().unique().collect();
     //println!("urls: {:?}",urls);
-    for i in urls{
+    for i in _urls{
 
         // Filtering Internal and External URLs
         let parsed_target = Url::parse(target_url)?;
+        //println!("host {:?}",target_url);
         if parsed_target.join(&i)?.path() != "/" {
             let check_url = parsed_target.join(&i)?;
-
+        match check_url.host_str(){
+        Some(ok_url) => {
         match option{
 
                LinkOptions::INTERNAL => {
@@ -308,7 +314,13 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
               }
 
             }
+
         }
+
+           None => { }
+        }
+        }
+    }
     }
 
 
