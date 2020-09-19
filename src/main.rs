@@ -3,15 +3,15 @@ use scraper::{Html, Selector};
 use std::io::prelude::*;
 use itertools::Itertools;
 use http::{HeaderMap, HeaderValue};
-use url::{Url, ParseError};
+use url::{Url};
 //use std::thread;
 use std::io::BufReader;
 use std::fs::File;
-//use std::io;
-//use std::path::Path;
 use regex::Regex;
-use std::collections::HashSet;
 use std::iter::FromIterator;
+use futures;
+//use futures::channel::oneshot;
+use futures::stream::{StreamExt};
 
 
 
@@ -132,34 +132,42 @@ async fn extract_urls(target_url: &str,extracted: &mut Vec<String>) -> Result<()
 /// Check the HTTP Request
 #[tokio::main]
 async fn check_request(target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box<dyn std::error::Error>> {
+        let fetches = futures::stream::iter(
+            sitemap.into_iter().map(|ii| {
+            //for ii in sitemap{
+                async move {
 
-    for ii in sitemap{
+                    // Make a request
+                    //let mut headers = HeaderMap::new();
+                    //let client = reqwest::Client::builder().build()?;
+                    let url = format!("{}/{}",target,String::from_iter(ii));
+                    //println!("checking URL: {}",&url);
 
+                    //headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
+                            let resp = match reqwest::get(&url).await{
+                                Ok(resp) => {
+                                            println!("[+] {} ========> {:?}",url,resp.status());
+                                }
+                                    _ => {}
+                            };
+                        //.get(&url)
+                        //.headers(headers)
+                        //.await;
+                        //.send()
+                        //.text()
+                        //.await?;
+                    //let status_code = resp.status();
+                    //println!("[+] {} ========> {:?}",url,status_code);
+                    //println!("[+] {} ========> ",url);
 
-        // Make a request
-        let mut headers = HeaderMap::new();
-        let client = reqwest::Client::builder().build()?;
-        let url = format!("{}/{}",target,String::from_iter(ii));
-        //println!("checking URL: {}",&url);
+                }
+            //}
+        })
+        ).buffer_unordered(100).collect::<Vec<()>>();
+        //println!("......");
+        fetches.await;
 
-        headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
-                let resp = client
-            .get(&url)
-            .headers(headers)
-            .send()
-            .await?;
-            //.text()
-            //.await?;
-        let status_code = resp.status();
-        println!("[+] {} ========> {:?}",url,status_code)
-
-    }
-
-    Ok(
-        println!("hi")
-
-        )
-
+        Ok(())
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -169,7 +177,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    let target = "https://pwm.oddo-bhf.com";
+    //let target = "https://pwm.oddo-bhf.com";
+    let target = "http://216.177.93.214";
     //let target = "http://b1twis3.ca";
     let depth = 10;
     //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
@@ -178,7 +187,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     // Start Scarping
-    get_urls(LinkOptions::INTERNAL, &mut fetched_urls,target);
+    get_urls(LinkOptions::ALL, &mut fetched_urls,target);
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
     //println!("fetched: {:?}",fetched_urls);
 
@@ -216,7 +225,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 //println!("Extracted: {:?}",extracted);
             }
 
-        get_urls(LinkOptions::INTERNAL, &mut fetched_urls,i);
+        get_urls(LinkOptions::ALL, &mut fetched_urls,i);
         for i in ROOT..depth{
             // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
             // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
@@ -235,15 +244,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Displaying the result
     check_request(target,unique_sitemap);
-    //for nn in unique_sitemap{
-        //print!("{}/",target);
-     //   let v = String::from_iter(nn);
-      //  println!("tesT: {}",v);
-        //for ii in nn{
-         //   print!("{}",ii);
-        //}
-       // println!("");
-    //}
 
 
 
