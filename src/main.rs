@@ -103,11 +103,26 @@ fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Ve
 
 }
 /// Extract URLs from JS file
-fn extract_urls(input: &str) -> HashSet<&str> {
-    let re: Regex = Regex::new(r"^(?!www\.|(?:http|ftp)s?:\/\/|[A-Za-z]:\\|\/\/).*").unwrap();
-   
-    re.find_iter(input).map(|u| u.as_str()).collect()
-    
+#[tokio::main]
+async fn extract_urls(target_url: &str,extracted: &mut Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    let re: Regex = Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
+
+
+    // Make a request
+    let mut headers = HeaderMap::new();
+    let client = reqwest::Client::builder().build()?;
+    headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
+    let resp = client
+        .get(target_url)
+        .headers(headers)
+        .send()
+        .await?
+        .text()
+        .await?;
+    Ok(
+        extracted.push(re.find_iter(&resp).map(|u| u.as_str()).collect())
+      )
+
 }
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
@@ -119,9 +134,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let target = "https://pwm.oddo-bhf.com";
     //let target = "http://b1twis3.ca";
     let depth = 10;
-    let tweet = "https://google.com hello /test/test.php /api/v1/";
-    let tag = extract_urls(tweet);
-    println!("tags = {:?}",tag);
+    //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
+    //let tag = extract_urls(tweet);
+    //println!("tags = {:?}",tag);
 
 
     // Start Scarping
@@ -152,13 +167,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Dogin Segmentation and adding endpoints to the inner URLs
     for i in url1 {
         if i != ""{
-            
+
             // Fetching JS files
             let js_path = Url::parse(i)?;
             if js_path.path().contains(".js"){
                 println!("path = {}{}",target,js_path.path());
+                //let mut extracted = Vec::new();
+                //extract_urls(&format!("{}{}",target,js_path.path()),&mut extracted);
+
+                //println!("Extracted: {:?}",extracted);
             }
-            
+
         get_urls(LinkOptions::INTERNAL, &mut fetched_urls,i);
         for i in ROOT..depth{
             // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
@@ -170,12 +189,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         new_sitemap.append(&mut add_endpoints( &mut sitemap, endpoints.clone()));
         }
     }
-    
+
     //println!("New endpoints:::::: {:?}",new_endpoints);
     println!("New Sitemap Len: {}",new_sitemap.len());
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
     println!("Unique Sitemap Len: {}",unique_sitemap.len());
     for nn in unique_sitemap{
+        print!("{}",target);
         for ii in nn{
             print!("{}",ii);
         }
@@ -200,6 +220,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// Fetch URLs based on `LinkOptions` and save them into `fetched_urls` vector
 #[tokio::main]
 async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str) -> Result<(), Box<dyn std::error::Error>> {
+
     // Start Scraping
     let target_url = _url;
     //println!("target____url: {}",target_url);
