@@ -1,2 +1,0 @@
-endpoint1.php
-endpoint2.php

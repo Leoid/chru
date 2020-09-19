@@ -11,6 +11,8 @@ use std::fs::File;
 //use std::path::Path;
 use regex::Regex;
 use std::collections::HashSet;
+use std::iter::FromIterator;
+
 
 
 
@@ -126,6 +128,40 @@ async fn extract_urls(target_url: &str,extracted: &mut Vec<String>) -> Result<()
       )
 
 }
+
+/// Check the HTTP Request
+#[tokio::main]
+async fn check_request(target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box<dyn std::error::Error>> {
+
+    for ii in sitemap{
+
+
+        // Make a request
+        let mut headers = HeaderMap::new();
+        let client = reqwest::Client::builder().build()?;
+        let url = format!("{}/{}",target,String::from_iter(ii));
+        //println!("checking URL: {}",&url);
+
+        headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
+                let resp = client
+            .get(&url)
+            .headers(headers)
+            .send()
+            .await?;
+            //.text()
+            //.await?;
+        let status_code = resp.status();
+        println!("[+] {} ========> {:?}",url,status_code)
+
+    }
+
+    Ok(
+        println!("hi")
+
+        )
+
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Start Scrapping.......");
@@ -147,7 +183,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     //println!("fetched: {:?}",fetched_urls);
 
     // Getting Endpoints/Wordlist froma file
-    let endpoints: Vec<String> = read_lines("test.txt").unwrap();
+    let endpoints: Vec<String> = read_lines("endpoints.txt").unwrap();
 
     // Do segmentation
     build_segmented_sitemap(depth,&mut fetched_urls,&mut sitemap);
@@ -196,13 +232,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("New Sitemap Len: {}",new_sitemap.len());
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
     println!("Unique Sitemap Len: {}",unique_sitemap.len());
-    for nn in unique_sitemap{
-        print!("{}/",target);
-        for ii in nn{
-            print!("{}",ii);
-        }
-        println!("");
-    }
+
+    // Displaying the result
+    check_request(target,unique_sitemap);
+    //for nn in unique_sitemap{
+        //print!("{}/",target);
+     //   let v = String::from_iter(nn);
+      //  println!("tesT: {}",v);
+        //for ii in nn{
+         //   print!("{}",ii);
+        //}
+       // println!("");
+    //}
 
 
 
