@@ -51,7 +51,7 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
                 if item[_index] != ""{
                 if _index == ROOT{
                         if item[_index].to_string().contains(".") || item[_index].to_string().contains("#")
-                        || item[_index].to_string().contains("?"){
+                        || item[_index].to_string().contains("?") || item[_index].to_string().contains("&"){
                             // Skip a file
                             continue;
                         }
@@ -61,7 +61,7 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
                     for i in ROOT.._index+1{
                         // Skipping the filename
                         if item[i].to_string().contains(".") || item[i].to_string().contains("#")
-                        || item[_index].to_string().contains("?"){
+                        || item[i].to_string().contains("?") || item[i].to_string().contains("&"){
                             // Skip a file
                             continue;
                         }
@@ -133,9 +133,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    //let target = "https://pwm.oddo-bhf.com";
+    let target = "https://pwm.oddo-bhf.com";
     //let target = "http://b1twis3.ca";
-    let target = "http://216.177.93.235";
     let depth = 10;
     //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
     //let tag = extract_urls(tweet);
@@ -143,7 +142,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     // Start Scarping
-    get_urls(LinkOptions::ALL, &mut fetched_urls,target);
+    get_urls(LinkOptions::INTERNAL, &mut fetched_urls,target);
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
     //println!("fetched: {:?}",fetched_urls);
 
@@ -181,7 +180,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 //println!("Extracted: {:?}",extracted);
             }
 
-        get_urls(LinkOptions::ALL, &mut fetched_urls,i);
+        get_urls(LinkOptions::INTERNAL, &mut fetched_urls,i);
         for i in ROOT..depth{
             // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
             // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
@@ -267,8 +266,13 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
 
 
                &"a" => {
+                    match element.value().attr("href"){
+                        Some(u) => {
                     urls.push(element.value().attr("href").unwrap().to_string());
                     //println!("[a]: {}",element.value().attr("href").unwrap());
+                        }
+                        _ => {}
+                    }
                 }
 
                &"link" => {
