@@ -50,7 +50,8 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
                 // Skipping the empty or the "/" at the end of each vector
                 if item[_index] != ""{
                 if _index == ROOT{
-                        if item[_index].to_string().contains(".") || item[_index].to_string().contains("#"){
+                        if item[_index].to_string().contains(".") || item[_index].to_string().contains("#")
+                        || item[_index].to_string().contains("?"){
                             // Skip a file
                             continue;
                         }
@@ -59,7 +60,8 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
                 if _index > ROOT {
                     for i in ROOT.._index+1{
                         // Skipping the filename
-                        if item[i].to_string().contains(".") || item[i].to_string().contains("#"){
+                        if item[i].to_string().contains(".") || item[i].to_string().contains("#")
+                        || item[_index].to_string().contains("?"){
                             // Skip a file
                             continue;
                         }
@@ -131,8 +133,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    let target = "https://pwm.oddo-bhf.com";
+    //let target = "https://pwm.oddo-bhf.com";
     //let target = "http://b1twis3.ca";
+    let target = "http://216.177.93.235";
     let depth = 10;
     //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
     //let tag = extract_urls(tweet);
@@ -140,7 +143,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
     // Start Scarping
-    get_urls(LinkOptions::INTERNAL, &mut fetched_urls,target);
+    get_urls(LinkOptions::ALL, &mut fetched_urls,target);
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
     //println!("fetched: {:?}",fetched_urls);
 
@@ -178,7 +181,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 //println!("Extracted: {:?}",extracted);
             }
 
-        get_urls(LinkOptions::INTERNAL, &mut fetched_urls,i);
+        get_urls(LinkOptions::ALL, &mut fetched_urls,i);
         for i in ROOT..depth{
             // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
             // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
@@ -195,7 +198,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
     println!("Unique Sitemap Len: {}",unique_sitemap.len());
     for nn in unique_sitemap{
-        print!("{}",target);
+        print!("{}/",target);
         for ii in nn{
             print!("{}",ii);
         }
@@ -240,15 +243,29 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
     //println!("{:?}",&fragment.errors);
     //println!("{:?}",body);
     // Selector & Element
-    let target_tags = vec!["a","link","script","img"];
+    let target_tags = vec!["a","link","script","img","form"];
     let mut urls: Vec<String> = Vec::new();
-    if fragment.clone().errors.len()  ==  0 as usize {
+    // Check out this later ---------------
+    //if fragment.clone().errors.len()  == 99999999 as usize {
+    if fragment.clone().errors.len() <= 3 {
      //   assert!(true);
     //}
     target_tags.iter().map( |tag| {
         let selector = Selector::parse(tag).unwrap();
         for element in fragment.select(&selector){
             match tag {
+                &"form" => {
+                    match element.value().attr("action") {
+                        Some(u) => {
+                                urls.push(element.value().attr("action").unwrap().to_string());
+                                //println!("[form]: {}",element.value().attr("action").unwrap().to_string());
+
+                        }
+                        _ => {}
+                    }
+                 }
+
+
                &"a" => {
                     urls.push(element.value().attr("href").unwrap().to_string());
                     //println!("[a]: {}",element.value().attr("href").unwrap());
