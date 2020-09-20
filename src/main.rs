@@ -29,19 +29,14 @@ enum LinkOptions{
 /// Root route
 const ROOT: usize = 3;
 
-/// Fetched Url Struct
-//#[derive(Debug, Copy, Clone)]
-//struct FUrl{
- //url: Vec<String>,
-//}
 
-/// Arguments
+/// Fetch URLs in a target and append endpoints for each path/route
 #[derive(StructOpt)]
 struct Cli{
     /// Target URL
     #[structopt(short="h",long="host")]
     host: String,
-    // Endpoint file path
+    /// Endpoints file path
     #[structopt(short="w",long="wordlist")]
     path: String,
 }
@@ -213,7 +208,7 @@ async fn check_request(target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box
 fn main() -> Result<(), Box<dyn std::error::Error>>{
 
 
-    println!("Start Scrapping.......");
+    println!("Start Web Scrapping.......");
 
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
@@ -247,8 +242,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
     let mut new_sitemap: Vec<Vec<String>> = add_endpoints(&mut sitemap, endpoints.clone());
     //println!("new_sitemap: {:?}",new_sitemap);
-
     //println!("test_url: {:?}",url1);
+
+
     // Dogin Segmentation and adding endpoints to the inner URLs
     // This Block should be multithreaded
     for i in url1 {
@@ -280,6 +276,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
 
 
+
     //println!("New endpoints:::::: {:?}",new_endpoints);
     println!("New Sitemap Len: {}",new_sitemap.len());
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
@@ -303,7 +300,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     Ok(())
 }
 
-/// Fetch URLs based on `LinkOptions` and save them into `fetched_urls` vector
+/// Fetch URLs based on `LinkOptions.` and save them into `fetched_urls` vector
 #[tokio::main]
 async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str) -> Result<(), Box<dyn std::error::Error>> {
 
