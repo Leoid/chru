@@ -193,23 +193,24 @@ async fn check_request(target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box
                 }
             //}
         })
-        ).buffer_unordered(50).collect::<Vec<()>>();
+        ).buffer_unordered(100).collect::<Vec<()>>();
         //println!("......");
         fetches.await;
 
         Ok(())
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("Start Scrapping.......");
 
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    let target = "https://pwm.oddo-bhf.com";
+    //let target = "https://pwm.oddo-bhf.com";
     //let target = "http://209.202.146.185";
-    //let target = "https://b1twis3.ca";
+    let target = "http://b1twis3.ca";
     let depth = 10;
     //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
     //let tag = extract_urls(tweet);
@@ -238,6 +239,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     //println!("test_url: {:?}",url1);
     // Dogin Segmentation and adding endpoints to the inner URLs
+    // This Block should be multithreaded
     for i in url1 {
         if i != ""{
 
@@ -262,6 +264,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         new_sitemap.append(&mut add_endpoints( &mut sitemap, endpoints.clone()));
         }
     }
+
 
 
 
@@ -296,10 +299,10 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
     let target_url = _url;
     //println!("target____url: {}",target_url);
     //let mut headers = HeaderMap::new();
-    //let client = reqwest::Client::builder().build()?;
+    let client = reqwest::Client::builder().build()?;
     //headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
-    let resp = match reqwest::get(target_url).await{
-        Ok(resp) => {
+    let resp = match client.get(target_url).send().await?{
+        resp => {
 
             match resp.text().await{
                Ok(body) => {
