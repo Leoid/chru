@@ -95,7 +95,20 @@ fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Ve
     // Get the cleaned site map and append the endpoints from `endpoints`
     let clean_sitemap: Vec<Vec<String>> = _sitemap.clone().into_iter().unique().collect();
     let mut endpoints_vec2: Vec<Vec<String>> = Vec::new();
+
     //println!("sitemap: {:?}",clean_sitemap);
+
+    // Add endpoints at least once
+    if clean_sitemap.len() == 0{
+        for endpoint in &_endpoints {
+
+            let mut endpoints_vec: Vec<String> = Vec::new();
+            endpoints_vec.push(format!("{}",endpoint).to_string());
+            endpoints_vec2.push(endpoints_vec);
+        }
+
+    }
+
     for i in clean_sitemap{
         for endpoint in &_endpoints {
 
@@ -195,9 +208,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
     let target = "https://pwm.oddo-bhf.com";
-    //let target = "http://54.208.27.90:8882";
-    //let target = "http://wap.lojack.com";
-    //let target = "http://b1twis3.ca";
+    //let target = "http://209.202.146.185";
+    //let target = "https://b1twis3.ca";
     let depth = 10;
     //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
     //let tag = extract_urls(tweet);
@@ -215,13 +227,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Do segmentation
     build_segmented_sitemap(depth,&mut fetched_urls,&mut sitemap);
 
-
+    if fetched_urls.len() == 0{
+        fetched_urls.push(format!("{}/",target.to_string()));
+    }
     let mut test_url = fetched_urls.clone();
-    //println!("test_url: {:?}",test_url);
     let url1 = &test_url[..];
 
     let mut new_sitemap: Vec<Vec<String>> = add_endpoints(&mut sitemap, endpoints.clone());
+    //println!("new_sitemap: {:?}",new_sitemap);
 
+    //println!("test_url: {:?}",url1);
     // Dogin Segmentation and adding endpoints to the inner URLs
     for i in url1 {
         if i != ""{
@@ -254,7 +269,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("New Sitemap Len: {}",new_sitemap.len());
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
     println!("Unique Sitemap Len: {}",unique_sitemap.len());
-
+    //println!("unique: {:?}",unique_sitemap);
     // Displaying the result
     check_request(target,unique_sitemap);
 
@@ -280,167 +295,190 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
     // Start Scraping
     let target_url = _url;
     //println!("target____url: {}",target_url);
-    let mut headers = HeaderMap::new();
-    let client = reqwest::Client::builder().build()?;
-    headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
-    let resp = client
-        .get(target_url)
-        .headers(headers)
-        .send()
-        .await?
-        .text()
-        .await?;
+    //let mut headers = HeaderMap::new();
+    //let client = reqwest::Client::builder().build()?;
+    //headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
+    let resp = match reqwest::get(target_url).await{
+        Ok(resp) => {
 
-    let body = resp;
-    let fragment = Html::parse_document(&body);
-    //println!("{:?}",&fragment.errors);
-    //println!("{:?}",body);
-    // Selector & Element
-    let target_tags = vec!["a","link","script","img","form"];
-    let mut urls: Vec<String> = Vec::new();
-    // Check out this later ---------------
-    if fragment.clone().errors.len() <= 3 {
-    target_tags.iter().map( |tag| {
-        let selector = Selector::parse(tag).unwrap();
-        for element in fragment.select(&selector){
-            match tag {
-                &"form" => {
-                    match element.value().attr("action") {
-                        Some(u) => {
-                                urls.push(element.value().attr("action").unwrap().to_string());
-                                //println!("[form]: {}",element.value().attr("action").unwrap().to_string());
+            match resp.text().await{
+               Ok(body) => {
 
+        //let body = resp;
+        let fragment = Html::parse_document(&body);
+        //println!("{:?}",&fragment.errors);
+        //println!("{:?}",body);
+        // Selector & Element
+        let target_tags = vec!["a","link","script","img","form"];
+        let mut urls: Vec<String> = Vec::new();
+        // Check out this later ---------------
+        if fragment.clone().errors.len() <= 3 {
+        target_tags.iter().map( |tag| {
+            let selector = Selector::parse(tag).unwrap();
+            for element in fragment.select(&selector){
+                match tag {
+                    &"form" => {
+                        match element.value().attr("action") {
+                            Some(u) => {
+                                    urls.push(element.value().attr("action").unwrap().to_string());
+                                    //println!("[form]: {}",element.value().attr("action").unwrap().to_string());
+
+                            }
+                            _ => {}
                         }
-                        _ => {}
-                    }
-                 }
+                     }
 
 
-               &"a" => {
-                    match element.value().attr("href"){
-                        Some(u) => {
-                    urls.push(element.value().attr("href").unwrap().to_string());
-                    //println!("[a]: {}",element.value().attr("href").unwrap());
+                   &"a" => {
+                        match element.value().attr("href"){
+                            Some(u) => {
+                        urls.push(element.value().attr("href").unwrap().to_string());
+                        //println!("[a]: {}",element.value().attr("href").unwrap());
+                            }
+                            _ => {}
                         }
-                        _ => {}
                     }
-                }
 
-               &"link" => {
+                   &"link" => {
 
-                   urls.push(element.value().attr("href").unwrap().to_string());
-                   //println!("[href]: {}",element.value().attr("href").unwrap());
-               }
+                       urls.push(element.value().attr("href").unwrap().to_string());
+                       //println!("[href]: {}",element.value().attr("href").unwrap());
+                   }
 
-               &"script" => {
-                   match element.value().attr("src"){
-                       None => {
+                   &"script" => {
+                       match element.value().attr("src"){
+                           None => {
 
-                       }
-                       _ => {
-                            //println!("[SRC]: {}",element.value().attr("src").unwrap());
-                            urls.push(element.value().attr("src").unwrap().to_string());
+                           }
+                           _ => {
+                                //println!("[SRC]: {}",element.value().attr("src").unwrap());
+                                urls.push(element.value().attr("src").unwrap().to_string());
+                           }
                        }
                    }
-               }
-               &"img" => {
-                   //println!("[IMG]: {}",element.value().attr("src").unwrap());
-                   urls.push(element.value().attr("src").unwrap().to_string());
-               }
-               _ => {
+                   &"img" => {
+                        match element.value().attr("src"){
+                           None => {
 
-               }
-            }
+                           }
+                           _ => {
+                                //println!("[IMG]: {}",element.value().attr("src").unwrap());
+                                urls.push(element.value().attr("src").unwrap().to_string());
+                           }
+                       }
+                   }
+                   _ => {
 
-        }
-
-    }).unique().collect::<()>();
-
-
-    //-- End of Selector
-
-    // Cleaning the URLs vector
-    //println!("lennn: {}",urls.len());
-    let _urls: Vec<String> = urls.clone().into_iter().unique().collect();
-    if _urls.len() == 0{
-        //println!("000000");
-        let parsed_target = Url::parse(target_url)?;
-            let check_url = parsed_target.join("/")?;
-
-        fetched_urls.push(check_url.as_str().to_string());
-    }
-    for i in _urls{
-
-        // Filtering Internal and External URLs
-        let parsed_target = Url::parse(target_url)?;
-        //println!("host {:?}",target_url);
-        if parsed_target.join(&i)?.path() != "/" {
-            let check_url = parsed_target.join(&i)?;
-        match check_url.host_str(){
-        Some(ok_url) => {
-        match option{
-
-               LinkOptions::INTERNAL => {
-                    // Internal Links
-                    if parsed_target.host_str().unwrap() == check_url.host_str().unwrap() {
-                        if !check_url.path().contains("ailto"){
-                            fetched_urls.push(check_url.as_str().to_string());
-                        }
-
-                    // Relative Path
-                    if None == parsed_target.join(&i)?.host_str(){
-                        let jurl = parsed_target.join(&i)?;
-                        fetched_urls.push(jurl.as_str().to_string());
-                        }
-                    }
+                   }
                 }
 
+            }
 
-               LinkOptions::EXTERNAL => {
-                    // External Links
-                    if parsed_target.host_str().unwrap() != parsed_target.join(&i)?.host_str().unwrap(){
-                        //println!("external: {}",i);
-                        fetched_urls.push(i.to_string());
-                        // Ingore (for now)
-                        }
-               }
+        }).unique().collect::<()>();
 
-               LinkOptions::ALL => {
-                   // External and Internal Links
 
-                   // Internal Links
-                    if parsed_target.host_str().unwrap() == check_url.host_str().unwrap() {
-                        if !check_url.path().contains("ailto"){
-                            fetched_urls.push(check_url.as_str().to_string());
-                        }
+        //-- End of Selector
 
-                    // Relative Path
-                    if None == parsed_target.join(&i)?.host_str(){
-                        let jurl = parsed_target.join(&i)?;
-                        fetched_urls.push(jurl.as_str().to_string());
+        // Cleaning the URLs vector
+        //println!("lennn: {}",urls.len());
+        let _urls: Vec<String> = urls.clone().into_iter().unique().collect();
+        if _urls.len() == 0{
+            //println!("000000");
+            let parsed_target = Url::parse(target_url)?;
+                let check_url = parsed_target.join("/")?;
+
+            fetched_urls.push(check_url.as_str().to_string());
+        }
+        for i in _urls{
+
+            // Filtering Internal and External URLs
+            let parsed_target = Url::parse(target_url)?;
+            //println!("host {:?}",target_url);
+            if parsed_target.join(&i)?.path() != "/" {
+                let check_url = parsed_target.join(&i)?;
+            match check_url.host_str(){
+            Some(ok_url) => {
+            match option{
+
+                   LinkOptions::INTERNAL => {
+                        // Internal Links
+                        if parsed_target.host_str().unwrap() == check_url.host_str().unwrap() {
+                            if !check_url.path().contains("ailto"){
+                                fetched_urls.push(check_url.as_str().to_string());
+                            }
+
+                        // Relative Path
+                        if None == parsed_target.join(&i)?.host_str(){
+                            let jurl = parsed_target.join(&i)?;
+                            fetched_urls.push(jurl.as_str().to_string());
+                            }
                         }
                     }
 
-                  // External Links
-                  if parsed_target.host_str().unwrap() != parsed_target.join(&i)?.host_str().unwrap(){
-                       //println!("external: {}",i);
-                       fetched_urls.push(i.to_string());
-                       // Ingore (for now)
+
+                   LinkOptions::EXTERNAL => {
+                        // External Links
+                        if parsed_target.host_str().unwrap() != parsed_target.join(&i)?.host_str().unwrap(){
+                            //println!("external: {}",i);
+                            fetched_urls.push(i.to_string());
+                            // Ingore (for now)
+                            }
+                   }
+
+                   LinkOptions::ALL => {
+                       // External and Internal Links
+
+                       // Internal Links
+                        if parsed_target.host_str().unwrap() == check_url.host_str().unwrap() {
+                            if !check_url.path().contains("ailto"){
+                                fetched_urls.push(check_url.as_str().to_string());
+                            }
+
+                        // Relative Path
+                        if None == parsed_target.join(&i)?.host_str(){
+                            let jurl = parsed_target.join(&i)?;
+                            fetched_urls.push(jurl.as_str().to_string());
+                            }
+                        }
+
+                      // External Links
+                      if parsed_target.host_str().unwrap() != parsed_target.join(&i)?.host_str().unwrap(){
+                           //println!("external: {}",i);
+                           fetched_urls.push(i.to_string());
+                           // Ingore (for now)
+                      }
+
                   }
 
-              }
+                }
 
             }
 
+               None => { }
+            }
+            }
         }
 
-           None => { }
+
         }
+                   }
+                   _ => {}
+                }
+
         }
-    }
+        // Display Reqwest error
+        //Err(e) => {println!("errrrrrrrrrrr {:?}",e);}
+        _ => {}
+    };
+    //let resp = client
+     //   .get(target_url)
+      //  .headers(headers)
+       // .send()
+        //.await?
+        //.//text()
+        //.await?;
 
 
-    }
 
 
 
