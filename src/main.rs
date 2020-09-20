@@ -4,14 +4,13 @@ use std::io::prelude::*;
 use itertools::Itertools;
 use http::{HeaderMap, HeaderValue};
 use url::{Url};
-//use std::thread;
 use std::io::BufReader;
 use std::fs::File;
 use regex::Regex;
 use std::iter::FromIterator;
 use futures;
-//use futures::channel::oneshot;
 use futures::stream::{StreamExt};
+use structopt::StructOpt;
 
 
 
@@ -35,6 +34,17 @@ const ROOT: usize = 3;
 //struct FUrl{
  //url: Vec<String>,
 //}
+
+/// Arguments
+#[derive(StructOpt)]
+struct Cli{
+    /// Target URL
+    #[structopt(short="h",long="host")]
+    host: String,
+    // Endpoint file path
+    #[structopt(short="w",long="wordlist")]
+    path: String,
+}
 
 /// Reading lines from a file
 fn read_lines(path: &str) -> std::io::Result<Vec<String>> {
@@ -200,30 +210,31 @@ async fn check_request(target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box
         Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() -> Result<(), Box<dyn std::error::Error>>{
+
 
     println!("Start Scrapping.......");
 
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    //let target = "https://pwm.oddo-bhf.com";
-    //let target = "http://209.202.146.185";
-    let target = "http://b1twis3.ca";
     let depth = 10;
     //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
     //let tag = extract_urls(tweet);
     //println!("tags = {:?}",tag);
 
-
+    // Getting Args
+    //let args = std::env::args().nth(1).expect("No target given");
+    let args = Cli::from_args();
+    let target = args.host.as_str();
+    let path = args.path.as_str();
     // Start Scarping
     get_urls(LinkOptions::INTERNAL, &mut fetched_urls,target);
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
     //println!("fetched: {:?}",fetched_urls);
 
     // Getting Endpoints/Wordlist froma file
-    let endpoints: Vec<String> = read_lines("endpoints.txt").unwrap();
+    let endpoints: Vec<String> = read_lines(path).unwrap();
 
     // Do segmentation
     build_segmented_sitemap(depth,&mut fetched_urls,&mut sitemap);
@@ -241,6 +252,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Dogin Segmentation and adding endpoints to the inner URLs
     // This Block should be multithreaded
     for i in url1 {
+        //println!("checking: {:?}",i);
         if i != ""{
 
             // Fetching JS files
