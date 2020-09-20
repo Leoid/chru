@@ -11,27 +11,38 @@ use std::iter::FromIterator;
 use futures;
 use futures::stream::{StreamExt};
 use structopt::StructOpt;
-
+use std::str::FromStr;
+use std::string::ParseError;
 
 
 
 
 /// Link Options Enum
+#[derive(Copy, Clone, Debug)]
 enum LinkOptions{
     INTERNAL,
     EXTERNAL,
     ALL,
 }
 
-
-
+impl FromStr for LinkOptions{
+    type Err = ParseError;
+    fn from_str(link: &str) -> Result<Self, Self::Err>{
+        match link {
+            "I" => Ok(LinkOptions::INTERNAL),
+            "E" => Ok(LinkOptions::EXTERNAL),
+            "A" => Ok(LinkOptions::ALL),
+            _ => Ok(LinkOptions::INTERNAL),
+        }
+    }
+}
 
 /// Root route
 const ROOT: usize = 3;
 
 
 /// Fetch URLs in a target and append endpoints for each path/route
-#[derive(StructOpt)]
+#[derive(Debug, StructOpt)]
 struct Cli{
     /// Target URL
     #[structopt(short="h",long="host")]
@@ -39,6 +50,10 @@ struct Cli{
     /// Endpoints file path
     #[structopt(short="w",long="wordlist")]
     path: String,
+    /// URLs Options to Fetch [Interal=I, External=E or ALL=A]
+    #[structopt(short="l",long="link-option", default_value="I")]
+    link: LinkOptions,
+
 }
 
 /// Reading lines from a file
@@ -223,8 +238,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let args = Cli::from_args();
     let target = args.host.as_str();
     let path = args.path.as_str();
+    let link = args.link;
+
     // Start Scarping
-    get_urls(LinkOptions::INTERNAL, &mut fetched_urls,target);
+    get_urls(link, &mut fetched_urls,target);
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
     //println!("fetched: {:?}",fetched_urls);
 
@@ -261,7 +278,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
                 //println!("Extracted: {:?}",extracted);
             }
 
-        get_urls(LinkOptions::INTERNAL, &mut fetched_urls,i);
+        get_urls(link, &mut fetched_urls,i);
         for i in ROOT..depth{
             // Build Site map from `fetched_urls` and add for each route a line from `endpoints` file.
             // Starting from 3 because we're splitting the URL, `10` is the Depth, which can be changed
