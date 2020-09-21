@@ -2,7 +2,7 @@ use reqwest;
 use scraper::{Html, Selector};
 use std::io::prelude::*;
 use itertools::Itertools;
-use http::{HeaderMap, HeaderValue, StatusCode};
+use http::{HeaderMap, HeaderValue};
 use url::{Url};
 use std::io::BufReader;
 use std::fs::File;
@@ -47,6 +47,12 @@ pub enum Error {
 /// Root route
 const ROOT: usize = 3;
 
+/// Filter Text Struct
+#[derive(Debug, Copy, Clone)]
+struct Ftext<'a>{
+    /// Filter responses based on this string
+    filter: &'a str,
+}
 
 /// Fetch URLs in a target and append endpoints for each path/route
 #[derive(Debug, StructOpt)]
@@ -67,8 +73,11 @@ struct Cli{
     #[structopt(short="t",long="threads",default_value="50")]
     nthreads: usize,
     /// Status Code to print
-    #[structopt(short="s",long="status-code",default_value="200")]
+    #[structopt(short="s",long="status-code",default_value="0")]
     status_code: usize,
+    /// Text/word in Response
+    #[structopt(short="T",long="text",default_value="")]
+    filter_text: String,
 
 }
 
@@ -188,12 +197,12 @@ async fn extract_urls(target_url: &str,extracted: &mut Vec<String>) -> Result<()
 
 /// Check the HTTP Request
 #[tokio::main]
-async fn check_request(s_code: u16,nthreads: usize,target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box<dyn std::error::Error>> {
+async fn check_request(filter_text: Ftext,s_code: u16,nthreads: usize,target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box<dyn std::error::Error>> {
         let fetches = futures::stream::iter(
             sitemap.into_iter().map(|ii| {
             //for ii in sitemap{
                 async move {
-
+                    
                     // Make a request
                     //let mut headers = HeaderMap::new();
                     //Redirect Policy
@@ -219,18 +228,22 @@ async fn check_request(s_code: u16,nthreads: usize,target: &str,sitemap: Vec<Vec
                     //println!("checking URL: {}",&url);
 
                     //headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
+                    
                             let resp = match reqwest::get(&url).await{
                             //let resp = match client.get(&url).send().await{
                                 Ok(resp) => {
-                                   if(resp.status().as_u16() == s_code){ 
-                                            println!("[+] /{: <60} | {: <60} | {} Bytes",path,resp.status(),
+                                    let _ss = resp.status();
+                                   if resp.status().as_u16() == s_code || s_code == 0 { 
                                                 match resp.text().await{
                                                     Ok(text) => {
-                                                        text.len()
+                                                            if text.contains(filter_text.filter) { 
+                                                                println!("[+] /{: <60} | {: <60} | {} Bytes",path,_ss,
+                                                                text.len()
+                                                                ); // end of println!
                                                             }
-                                                    _ => { 0 }
+                                                    }
+                                                    _ => {}
                                                 }
-                                            ); // end of println!
                                     }
                                 }
                                 _ => {}
@@ -269,6 +282,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let depth = args.depth;
     let nthreads = args.nthreads;
     let status_code = args.status_code as u16;
+    let filter_text = args.filter_text;
+    
 
     // Start Scarping
     get_urls(link, &mut fetched_urls,target);
@@ -326,12 +341,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
     //println!("New endpoints:::::: {:?}",new_endpoints);
     //println!("New Sitemap Len: {}",new_sitemap.len());
-    println!("[*] :::::::::::: Target: {} ",target);
+    println!("[*] Target: {} ",target);
+    println!("[*] Number of Threads: {} ",nthreads);
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
-    println!("[*] :::::::::::: Number of Requests: {}",unique_sitemap.len());
+    println!("[*] Number of Requests: {}",unique_sitemap.len());
     //println!("unique: {:?}",unique_sitemap);
     // Displaying the result
-    check_request(status_code,nthreads,target,unique_sitemap);
+    let filter_text = Ftext{
+        filter: &filter_text,
+    };
+    check_request(filter_text,status_code,nthreads,target,unique_sitemap);
 
 
 
