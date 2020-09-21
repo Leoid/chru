@@ -2,7 +2,7 @@ use reqwest;
 use scraper::{Html, Selector};
 use std::io::prelude::*;
 use itertools::Itertools;
-use http::{HeaderMap, HeaderValue};
+use http::{HeaderMap, HeaderValue, StatusCode};
 use url::{Url};
 use std::io::BufReader;
 use std::fs::File;
@@ -13,6 +13,7 @@ use futures::stream::{StreamExt};
 use structopt::StructOpt;
 use std::str::FromStr;
 use std::string::ParseError;
+
 
 
 
@@ -37,6 +38,12 @@ impl FromStr for LinkOptions{
     }
 }
 
+#[derive(Debug)]
+pub enum Error {
+       Request(reqwest::Error),
+       Status(reqwest::StatusCode)
+}
+
 /// Root route
 const ROOT: usize = 3;
 
@@ -53,6 +60,15 @@ struct Cli{
     /// URLs Options to Fetch [Interal=I, External=E or ALL=A]
     #[structopt(short="l",long="link-option", default_value="I")]
     link: LinkOptions,
+    /// Segmentation Depth
+    #[structopt(short="d", long="depth",default_value="10")]
+    depth: usize,
+    /// Number of Threads
+    #[structopt(short="t",long="threads",default_value="50")]
+    nthreads: usize,
+    /// Status Code to print
+    #[structopt(short="s",long="status-code",default_value="200")]
+    status_code: usize,
 
 }
 
@@ -172,7 +188,7 @@ async fn extract_urls(target_url: &str,extracted: &mut Vec<String>) -> Result<()
 
 /// Check the HTTP Request
 #[tokio::main]
-async fn check_request(target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box<dyn std::error::Error>> {
+async fn check_request(s_code: u16,nthreads: usize,target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box<dyn std::error::Error>> {
         let fetches = futures::stream::iter(
             sitemap.into_iter().map(|ii| {
             //for ii in sitemap{
@@ -180,7 +196,23 @@ async fn check_request(target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box
 
                     // Make a request
                     //let mut headers = HeaderMap::new();
-                    //let client = reqwest::Client::builder().build()?;
+                    //Redirect Policy
+				/*	let custom = reqwest::redirect::Policy::custom(|attempt| {
+						if attempt.previous().len() > 5 {
+					  	attempt.error("too many redirects")
+						} //else if attempt.url().host_str() == Some("example.domain") {
+							// prevent redirects to 'example.domain'
+						//	attempt.stop()
+						//} 
+						else {
+							attempt.follow()
+						}
+					});
+                    let client = reqwest::Client::builder()
+								.redirect(custom)
+					  		.build()
+								.unwrap();
+                                */
                     let path = String::from_iter(ii.clone());
                     let url = format!("{}/{}",target,String::from_iter(ii));
                     //let url = format!("/{}",String::from_iter(ii));
@@ -188,32 +220,27 @@ async fn check_request(target: &str,sitemap: Vec<Vec<String>>) -> Result<(), Box
 
                     //headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
                             let resp = match reqwest::get(&url).await{
+                            //let resp = match client.get(&url).send().await{
                                 Ok(resp) => {
+                                   if(resp.status().as_u16() == s_code){ 
                                             println!("[+] /{: <60} | {: <60} | {} Bytes",path,resp.status(),
-                                           match resp.text().await{
-                                               Ok(text) => {
-                                                   text.len()
-                                               }
-                                               _ => { 0 }
-                                           }
-                                            );
+                                                match resp.text().await{
+                                                    Ok(text) => {
+                                                        text.len()
+                                                            }
+                                                    _ => { 0 }
+                                                }
+                                            ); // end of println!
+                                    }
                                 }
-                                    _ => {}
+                                _ => {}
+                             // Err(e) => {println!("error: {}",e)}
                             };
-                        //.get(&url)
-                        //.headers(headers)
-                        //.await;
-                        //.send()
-                        //.text()
-                        //.await?;
-                    //let status_code = resp.status();
-                    //println!("[+] {} ========> {:?}",url,status_code);
-                    //println!("[+] {} ========> ",url);
 
                 }
             //}
         })
-        ).buffer_unordered(100).collect::<Vec<()>>();
+        ).buffer_unordered(nthreads).collect::<Vec<()>>();
         //println!("......");
         fetches.await;
 
@@ -228,7 +255,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    let depth = 10;
+    //let depth = 10;
     //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
     //let tag = extract_urls(tweet);
     //println!("tags = {:?}",tag);
@@ -239,6 +266,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let target = args.host.as_str();
     let path = args.path.as_str();
     let link = args.link;
+    let depth = args.depth;
+    let nthreads = args.nthreads;
+    let status_code = args.status_code as u16;
 
     // Start Scarping
     get_urls(link, &mut fetched_urls,target);
@@ -295,12 +325,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
 
     //println!("New endpoints:::::: {:?}",new_endpoints);
-    println!("New Sitemap Len: {}",new_sitemap.len());
+    //println!("New Sitemap Len: {}",new_sitemap.len());
+    println!("[*] :::::::::::: Target: {} ",target);
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
-    println!("Unique Sitemap Len: {}",unique_sitemap.len());
+    println!("[*] :::::::::::: Number of Requests: {}",unique_sitemap.len());
     //println!("unique: {:?}",unique_sitemap);
     // Displaying the result
-    check_request(target,unique_sitemap);
+    check_request(status_code,nthreads,target,unique_sitemap);
 
 
 
@@ -499,13 +530,6 @@ async fn get_urls(option: LinkOptions,fetched_urls: &mut Vec<String>,_url: &str)
         //Err(e) => {println!("errrrrrrrrrrr {:?}",e);}
         _ => {}
     };
-    //let resp = client
-     //   .get(target_url)
-      //  .headers(headers)
-       // .send()
-        //.await?
-        //.//text()
-        //.await?;
 
 
 
