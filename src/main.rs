@@ -78,6 +78,9 @@ struct Cli{
     /// Text/word in Response
     #[structopt(short="T",long="text",default_value="")]
     filter_text: String,
+    /// List of common extensions, such as .js,.txt,.asp.net
+    #[structopt(short="e",long="extensions",use_delimiter = true)]
+    ext: Vec<String>,
 
 }
 
@@ -134,7 +137,7 @@ fn build_segmented_sitemap(_index: usize, _urls: &mut Vec<String>, _sitemap: &mu
 }
 
 /// Add endpoints to the site map
-fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Vec<Vec<String>> {
+fn add_endpoints(ext: Vec<String>, _sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Vec<Vec<String>> {
 
 
     // Get the cleaned site map and append the endpoints from `endpoints`
@@ -146,27 +149,30 @@ fn add_endpoints(_sitemap: &mut Vec<Vec<String>>, _endpoints: Vec<String>) -> Ve
     // Add endpoints at least once
     if clean_sitemap.len() == 0{
         for endpoint in &_endpoints {
-
-            let mut endpoints_vec: Vec<String> = Vec::new();
-            endpoints_vec.push(format!("{}",endpoint).to_string());
-            endpoints_vec2.push(endpoints_vec);
+            for e in &ext{
+                let mut endpoints_vec: Vec<String> = Vec::new();
+                endpoints_vec.push(format!("{}{}",endpoint,e).to_string());
+                endpoints_vec2.push(endpoints_vec);
+            }
         }
 
     }
 
     for i in clean_sitemap{
         for endpoint in &_endpoints {
+            for e in &ext{
 
-            let mut endpoints_vec: Vec<String> = Vec::new();
-            for ii in &i {
-                if ii != ""{
-                  //print!("{}/",ii);
-                  endpoints_vec.push(format!("{}/",ii));
+                let mut endpoints_vec: Vec<String> = Vec::new();
+                for ii in &i {
+                    if ii != ""{
+                      //print!("{}/",ii);
+                      endpoints_vec.push(format!("{}/",ii));
+                    }
                 }
+                endpoints_vec.push(format!("{}{}",endpoint,e).to_string());
+                //print!("{}\n",endpoint);
+                endpoints_vec2.push(endpoints_vec);
             }
-            endpoints_vec.push(format!("{}",endpoint).to_string());
-            //print!("{}\n",endpoint);
-            endpoints_vec2.push(endpoints_vec);
         }
     }
     endpoints_vec2
@@ -202,7 +208,7 @@ async fn check_request(filter_text: Ftext,s_code: u16,nthreads: usize,target: &s
             sitemap.into_iter().map(|ii| {
             //for ii in sitemap{
                 async move {
-                    
+
                     // Make a request
                     //let mut headers = HeaderMap::new();
                     //Redirect Policy
@@ -212,7 +218,7 @@ async fn check_request(filter_text: Ftext,s_code: u16,nthreads: usize,target: &s
 						} //else if attempt.url().host_str() == Some("example.domain") {
 							// prevent redirects to 'example.domain'
 						//	attempt.stop()
-						//} 
+						//}
 						else {
 							attempt.follow()
 						}
@@ -228,15 +234,15 @@ async fn check_request(filter_text: Ftext,s_code: u16,nthreads: usize,target: &s
                     //println!("checking URL: {}",&url);
 
                     //headers.insert(reqwest::header::USER_AGENT,HeaderValue::from_str("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0").unwrap());
-                    
+
                             let resp = match reqwest::get(&url).await{
                             //let resp = match client.get(&url).send().await{
                                 Ok(resp) => {
                                     let _ss = resp.status();
-                                   if resp.status().as_u16() == s_code || s_code == 0 { 
+                                   if resp.status().as_u16() == s_code || s_code == 0 {
                                                 match resp.text().await{
                                                     Ok(text) => {
-                                                            if text.contains(filter_text.filter) { 
+                                                            if text.contains(filter_text.filter) {
                                                                 println!("[+] /{: <60} | {: <60} | {} Bytes",path,_ss,
                                                                 text.len()
                                                                 ); // end of println!
@@ -283,16 +289,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let nthreads = args.nthreads;
     let status_code = args.status_code as u16;
     let filter_text = args.filter_text;
-    
+    let exts = args.ext;
+
 
     // Start Scarping
     get_urls(link, &mut fetched_urls,target);
+
     //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
     //println!("fetched: {:?}",fetched_urls);
 
     // Getting Endpoints/Wordlist froma file
     let endpoints: Vec<String> = read_lines(path).unwrap();
-
+    let ext: Vec<String> = exts;
     // Do segmentation
     build_segmented_sitemap(depth,&mut fetched_urls,&mut sitemap);
 
@@ -302,7 +310,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     let mut test_url = fetched_urls.clone();
     let url1 = &test_url[..];
 
-    let mut new_sitemap: Vec<Vec<String>> = add_endpoints(&mut sitemap, endpoints.clone());
+    let mut new_sitemap: Vec<Vec<String>> = add_endpoints(ext.clone(), &mut sitemap, endpoints.clone());
     //println!("new_sitemap: {:?}",new_sitemap);
     //println!("test_url: {:?}",url1);
 
@@ -331,7 +339,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
 
             build_segmented_sitemap(i,&mut fetched_urls,&mut sitemap);
         }
-        new_sitemap.append(&mut add_endpoints( &mut sitemap, endpoints.clone()));
+        new_sitemap.append(&mut add_endpoints(ext.clone(), &mut sitemap, endpoints.clone()));
         }
     }
 
