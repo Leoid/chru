@@ -270,7 +270,7 @@ async fn check_request(filter_text: Ftext,s_code: u16,nthreads: usize,target: &s
 fn main() -> Result<(), Box<dyn std::error::Error>>{
 
 
-    println!("Start Web Scrapping.......");
+    println!("Start Web Scraping.......");
 
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
