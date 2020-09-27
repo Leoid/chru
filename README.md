@@ -19,3 +19,9 @@
      -t, --threads <nthreads>           Number of Threads [default: 50]
      -w, --wordlist <path>              Endpoints file path
      -s, --status-code <status-code>    Status Code to print [default: 0]
+
+#### TODO:
+    - JS Parser
+    - Validate Paths based on Two different roles/tokens
+    - Include endpoints and the parameters in the validation
+    - Improve the filter

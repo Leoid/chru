@@ -181,6 +181,7 @@ fn add_endpoints(ext: Vec<String>, _sitemap: &mut Vec<Vec<String>>, _endpoints: 
 /// Extract URLs from JS file
 #[tokio::main]
 async fn extract_urls(target_url: &str,extracted: &mut Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
+    // Got this regex from /gospider
     let re: Regex = Regex::new(r"[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)").unwrap();
 
 
@@ -274,13 +275,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
     let mut sitemap: Vec<Vec<String>> = Vec::new();
-    //let depth = 10;
-    //let tweet = "https://google.com hello /test/test.php /api/v1/ /index.html";
-    //let tag = extract_urls(tweet);
-    //println!("tags = {:?}",tag);
 
     // Getting Args
-    //let args = std::env::args().nth(1).expect("No target given");
     let args = Cli::from_args();
     let target = args.host.as_str();
     let path = args.path.as_str();
@@ -295,7 +291,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     // Start Scarping
     get_urls(link, &mut fetched_urls,target);
 
-    //get_urls(LinkOptions::INTERNAL, &mut fetched_urls,"http://b1twis3.ca/wp-includes/css/dist/block-library/style.min.css?ver=5.4.2");
     //println!("fetched: {:?}",fetched_urls);
 
     // Getting Endpoints/Wordlist froma file

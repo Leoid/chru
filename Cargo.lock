@@ -99,6 +99,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
+name = "chru"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "http",
+ "itertools",
+ "lazy_static",
+ "openssl",
+ "regex",
+ "reqwest",
+ "scraper",
+ "select",
+ "structopt",
+ "tokio",
+ "url",
+]
+
+[[package]]
 name = "clap"
 version = "2.33.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -504,24 +522,6 @@ dependencies = [
  "matches",
  "unicode-bidi",
  "unicode-normalization",
-]
-
-[[package]]
-name = "chru"
-version = "0.1.0"
-dependencies = [
- "futures",
- "http",
- "itertools",
- "lazy_static",
- "openssl",
- "regex",
- "reqwest",
- "scraper",
- "select",
- "structopt",
- "tokio",
- "url",
 ]
 
 [[package]]
