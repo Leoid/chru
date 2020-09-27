@@ -317,14 +317,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
         if i != ""{
 
             // Fetching JS files
-            let js_path = Url::parse(i)?;
-            if js_path.path().contains(".js"){
-                println!("path = {}{}",target,js_path.path());
+            //let js_path = Url::parse(i)?;
+            //if js_path.path().contains(".js"){
+             //   println!("path = {}{}",target,js_path.path());
                 //let mut extracted = Vec::new();
                 //extract_urls(&format!("{}{}",target,js_path.path()),&mut extracted);
 
                 //println!("Extracted: {:?}",extracted);
-            }
+            //}
 
         get_urls(link, &mut fetched_urls,i);
         for i in ROOT..depth{
