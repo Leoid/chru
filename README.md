@@ -1,4 +1,4 @@
-#### chru
+# chru
 #### Fetch URLs, do segmentation then append endpoints for each path/route
 
 #### USAGE:
