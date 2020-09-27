@@ -1,6 +1,6 @@
 [package]
 name = "chru"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Leoid <hmali201488@gmail.com>"]
 edition = "2018"
 
