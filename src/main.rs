@@ -79,7 +79,7 @@ struct Cli{
     #[structopt(short="T",long="text",default_value="")]
     filter_text: String,
     /// List of common extensions, such as .js,.txt,.asp.net
-    #[structopt(short="e",long="extensions",use_delimiter = true)]
+    #[structopt(short="e",long="extensions",use_delimiter = true, default_value=".txt,.html")]
     ext: Vec<String>,
 
 }
