@@ -1,5 +1,7 @@
 # chru
 #### Fetch URLs, do segmentation then append endpoints for each path/route
+![alt](test.jpg)
+
 
 #### USAGE:
     - chru [OPTIONS] --host <host> --wordlist <path>
