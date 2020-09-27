@@ -1,8 +1,8 @@
-#### Internal Project (IDORU)
-#### Fetch URLs in a target and append endpoints for each path/route
+#### chru
+#### Fetch URLs, do segmentation then append endpoints for each path/route
 
 #### USAGE:
-    - idoru [OPTIONS] --host <host> --wordlist <path>
+    - chru [OPTIONS] --host <host> --wordlist <path>
 
 #### FLAGS:
        --help       Prints help information
