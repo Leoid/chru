@@ -1,6 +1,6 @@
 # chru
 #### Fetch URLs, do segmentation then append endpoints for each path/route
-![alt](test.png)
+![alt](image.png)
 
 
 #### USAGE:
