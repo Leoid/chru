@@ -27,8 +27,8 @@
     - [ ] Improve the filter
     - [ ] Output without validation
     - [ ] Add insecure TLS option
-### Example: 
-	     chru -h https://example.com -l I -w endpoints.txt -d 10 -t 30 -T "Google developer" -s 200
+#####  Example: 
+    chru -h https://example.com -l I -w endpoints.txt -d 10 -t 30 -T "Google developer" -s 200
 	     Output: 
 	     Running `target/debug/chru -h 'https://example.com' -l I -w endpoints.txt -d 10 -t 30 -T 'Google developer' -s 200`
 	     [*] Target: https://example.com
