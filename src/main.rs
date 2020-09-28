@@ -270,7 +270,7 @@ async fn check_request(filter_text: Ftext,s_code: u16,nthreads: usize,target: &s
 fn main() -> Result<(), Box<dyn std::error::Error>>{
 
 
-    println!("Start Web Scraping.......");
+    //println!("Start Web Scraping.......");
 
     // Arguments
     let mut fetched_urls: Vec<String> = Vec::new();
@@ -347,7 +347,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>{
     println!("[*] Target: {} ",target);
     println!("[*] Number of Threads: {} ",nthreads);
     let unique_sitemap: Vec<Vec<String>> = new_sitemap.clone().into_iter().unique().collect();
-    println!("[*] Number of Requests: {}",unique_sitemap.len());
+    println!("[*] Number of Requests: {}\n",unique_sitemap.len());
     //println!("unique: {:?}",unique_sitemap);
     // Displaying the result
     let filter_text = Ftext{
