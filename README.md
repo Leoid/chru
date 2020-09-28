@@ -26,3 +26,4 @@
     - Include endpoints and the parameters in the validation
     - Improve the filter
     - Output without validation
+    - Add insecure TLS option
